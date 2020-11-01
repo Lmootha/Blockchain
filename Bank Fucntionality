@@ -1,0 +1,46 @@
+pragma solidity >=0.5.13 <0.7.3;
+//pragma experimental ABIEncoderV2;
+
+contract SmartBank{
+    address payable Owner_Address= msg.sender;
+    uint256 usercount;
+
+    mapping (address =>User_Details ) user_bank_details;
+ 
+    struct User_Details{
+        address payable addr;
+        uint256 bankbalance;
+        bool flag;
+    }
+    
+
+    function Register_User(address payable var_user_address)public{
+        require((user_bank_details[var_user_address]).flag == false, "This address is already registered");
+        user_bank_details[var_user_address] = User_Details(var_user_address,0,true);
+        usercount ++;
+   
+    }
+    
+    function Pay_Ether_to_BankAccount()public payable{
+        require((user_bank_details[msg.sender]).flag == true, "This address is not yet registered, Please register to Pay Ether");
+        (user_bank_details[msg.sender]).bankbalance += msg.value; 
+    }
+    
+    function Receive_Ether_From_BankAccount(address payable destination, uint256 wei_unit)public payable{
+        require((user_bank_details[destination]).flag == true, "Destination address is not yet registered, Please register to Receive Ether");
+        require((user_bank_details[msg.sender]).bankbalance  >= wei_unit, "You have insufficient balance to withdraw");
+        destination.transfer(wei_unit);
+        (user_bank_details[msg.sender]).bankbalance = (user_bank_details[msg.sender]).bankbalance - msg.value; 
+    }
+
+    
+    function display_user_details(address payable user_address) public view returns(uint256, address payable){
+        require (msg.sender == user_address,"You are not authorised to view details of this address");
+        return ((user_bank_details[user_address]).bankbalance, (user_bank_details[user_address]).addr);
+    }
+    
+    function Display_Bank_Details()public view returns(string memory,uint256,uint256){
+        require(msg.sender == Owner_Address,"Only the Owner has permission to view this");
+        return('This displays the total ether in the bank and total no of registered users',address(this).balance,usercount);
+    }
+}
