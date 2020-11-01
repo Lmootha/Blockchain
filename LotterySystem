@@ -1,0 +1,66 @@
+pragma solidity >=0.5.13 <0.7.3;
+
+contract SmartLotterySystem{
+    address payable owner = msg.sender;
+    bool LotteryPause;
+    struct Lottery{
+        address payable useraddress;
+        uint256 contribution;
+        bool contributed;
+    }
+    Lottery[] useraddr;
+    
+    //To accept Ether to the Smart Contract
+    function PaytoLottery()public payable{
+        require(LotteryPause != true,"The Lottery is currently paused, Contact the owner");
+        require(checkaddr(msg.sender)==false,"You have already participated in this round");
+        require(msg.value >= 1 ether,"Minimum participation amount is 1 Ether");
+        useraddr.push() = Lottery(msg.sender,msg.value,true);
+    }
+    
+    
+    //To check if the particular address has already participated in this round or not
+    function checkaddr(address payable _addr)private view returns(bool){
+       for (uint i = 0; i < useraddr.length; i++) {
+           if (useraddr[i].useraddress == _addr ){
+               return useraddr[i].contributed;}
+           }
+        return false;
+    }
+
+    // We generate a winner randomnly and transfer the entire ether of the current round to him and clear the Lottery system for next round
+    function generatewinner()public checkowner {
+        require(LotteryPause != true,"The Lottery is currently paused, Kindly resume it to continue");
+        require(address(this).balance > 0,"No one contributed to Lottery yet");
+        uint256 random = uint256(keccak256(abi.encodePacked(block.difficulty,block.timestamp,msg.sender))) % useraddr.length;
+        (useraddr[random].useraddress).transfer(address(this).balance);
+        clearuserdetails();
+    }
+    
+    // To clear the array for next round of Lottery
+    function clearuserdetails()private {
+        delete useraddr;
+    }
+    
+    // Displays the total no of people who contributed and the total Ethers contributed
+    function Lotterydetails()public checkowner view returns(uint256,uint256){
+       return (useraddr.length, address(this).balance);
+    }
+    
+    
+    //To pause/unpause the Lottery
+    function PauseLottery(bool _Lotterypause)public checkowner returns(string memory){
+        LotteryPause = _Lotterypause;
+        if (LotteryPause != true){
+            return ('The Lottery is Live');
+        }
+        return ('The Lottery is currently Paused');
+    }
+    
+    
+    // To check if the sender of the message is indeed the owner or not
+    modifier checkowner(){
+        require(msg.sender == owner,"Only the owner has permission for this");
+        _;
+    }
+}
